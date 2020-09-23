@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.10)
 # Project Name
 project(socks CXX)
 
+# Project Options
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Project files
 set(SOURCE_FILES src/dummy.cpp)
 include_directories(include/)
