@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 project(socks CXX)
 
 # Project files
-set(SOURCE_FILES)
+set(SOURCE_FILES src/dummy.cpp)
 include_directories(include/)
 
 # Targets
