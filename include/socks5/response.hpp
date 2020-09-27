@@ -56,6 +56,15 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
         return take_address(out);
     }
 
+    inline auto skip(std::size_t count) -> bool {
+        if (size() < count) {
+            return false;
+        }
+
+        buf_.erase(buf_.begin(), buf_.begin() + count);
+        return true;
+    }
+
   private:
     inline auto pop_front() -> std::uint8_t {
         assert(size() > 0);
