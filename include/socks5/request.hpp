@@ -4,14 +4,14 @@
 #include "socks5/detail/type_traits/iterator.hpp"
 #include "socks5/message.hpp"
 
+#include <boost/asio/ip/address.hpp>
+
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <string_view>
 #include <type_traits>
 #include <vector>
-
-#include <boost/asio/ip/address.hpp>
 
 namespace socks5 {
 
