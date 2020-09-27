@@ -17,3 +17,4 @@ include_directories(include/)
 
 # Add tests
 create_test(request)
+create_test(response)
