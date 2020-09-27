@@ -1,8 +1,8 @@
 #ifndef LIBSOCKS5_REQUEST_HPP
 #define LIBSOCKS5_REQUEST_HPP
 
-#include "socks5/message.hpp"
 #include "socks5/detail/type_traits/iterator.hpp"
+#include "socks5/message.hpp"
 
 #include <cassert>
 #include <cstdint>
@@ -31,7 +31,7 @@ inline void append_uint(T num, std::vector<std::uint8_t> &buf) noexcept {
 
 } // namespace detail
 
-struct request final : socks5::message {
+struct request final : socks5::message<std::vector<std::uint8_t>> {
     request() = default;
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>

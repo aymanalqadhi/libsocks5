@@ -1,18 +1,18 @@
 #ifndef LIBSOCKS5_MESSAGE_HPP
 #define LIBSOCKS5_MESSAGE_HPP
 
-#include <cstdint>
-#include <vector>
+#include <cstddef>
+#include <utility>
 
 namespace socks5 {
 
+template <typename Container>
 struct message {
-    using container_type = std::vector<std::uint8_t>;
-    using iterator_type  = container_type::iterator;
+    using iterator_type = typename Container::iterator;
 
     message() = default;
 
-    message(std::vector<std::uint8_t> buf) : buf_ {std::move(buf)} {
+    message(Container buf) : buf_ {std::move(buf)} {
     }
 
     inline auto begin() noexcept -> iterator_type {
@@ -27,12 +27,13 @@ struct message {
         return buf_.size();
     }
 
-    inline auto operator[](std::size_t i) -> iterator_type::value_type {
+    inline auto operator[](std::size_t i) ->
+        typename iterator_type::value_type {
         return buf_[i];
     }
 
   protected:
-    container_type buf_;
+    Container buf_;
 };
 
 } // namespace socks5
