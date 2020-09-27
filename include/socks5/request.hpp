@@ -13,6 +13,9 @@
 namespace socks5 {
 
 struct request final {
+    using container_type = std::vector<std::uint8_t>;
+    using const_iterator = container_type::const_iterator;
+
     request() = default;
 
     template <typename T,
@@ -49,8 +52,12 @@ struct request final {
         put(bytes.cbegin(), bytes.cend());
     }
 
-    inline auto buffer() const noexcept -> const std::vector<std::uint8_t> & {
-        return buf_;
+    inline auto cbegin() const noexcept -> const_iterator {
+        return buf_.cbegin();
+    }
+
+    inline auto cend() const noexcept -> const_iterator {
+        return buf_.cend();
     }
 
     inline auto size() const noexcept -> std::size_t {
@@ -58,7 +65,7 @@ struct request final {
     }
 
   private:
-    std::vector<std::uint8_t> buf_;
+    container_type buf_;
 };
 
 } // namespace socks5

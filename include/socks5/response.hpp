@@ -12,6 +12,9 @@
 namespace socks5 {
 
 struct response final {
+    using container_type = std::vector<std::uint8_t>;
+    using const_iterator = container_type::const_iterator;
+
     response(std::vector<std::uint8_t> buf) : buf_ {std::move(buf)} {
     }
 
@@ -55,8 +58,12 @@ struct response final {
         return take_address(out);
     }
 
-    inline auto buffer() const noexcept -> const std::vector<std::uint8_t> & {
-        return buf_;
+    inline auto cbegin() const noexcept -> const_iterator {
+        return buf_.cbegin();
+    }
+
+    inline auto cend() const noexcept -> const_iterator {
+        return buf_.cend();
     }
 
     inline auto available() const noexcept -> std::size_t {
