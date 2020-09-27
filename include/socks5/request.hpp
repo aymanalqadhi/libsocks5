@@ -1,6 +1,7 @@
 #ifndef LIBSOCKS5_REQUEST_HPP
 #define LIBSOCKS5_REQUEST_HPP
 
+#include "socks5/message.hpp"
 #include "socks5/detail/type_traits/iterator.hpp"
 
 #include <cassert>
@@ -30,22 +31,19 @@ inline void append_uint(T num, std::vector<std::uint8_t> &buf) noexcept {
 
 } // namespace detail
 
-struct request final {
-    using container_type = std::vector<std::uint8_t>;
-    using const_iterator = container_type::const_iterator;
-
+struct request final : socks5::message {
     request() = default;
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
     inline void put(T num) noexcept {
-        socks5::detail::append_uint(num, buf_);
+        socks5::detail::append_uint(num, message::buf_);
     }
 
     template <typename Iterator,
               typename = std::enable_if_t<
                   socks5::detail::type_traits::is_iterator_v<Iterator>>>
     inline void put(const Iterator &begin, const Iterator &end) {
-        std::copy(begin, end, std::back_inserter(buf_));
+        std::copy(begin, end, std::back_inserter(message::buf_));
     }
 
     inline void put(std::string_view str) {
@@ -64,21 +62,6 @@ struct request final {
         const auto &bytes = addr.to_bytes();
         put(bytes.cbegin(), bytes.cend());
     }
-
-    inline auto cbegin() const noexcept -> const_iterator {
-        return buf_.cbegin();
-    }
-
-    inline auto cend() const noexcept -> const_iterator {
-        return buf_.cend();
-    }
-
-    inline auto size() const noexcept -> std::size_t {
-        return buf_.size();
-    }
-
-  private:
-    container_type buf_;
 };
 
 } // namespace socks5

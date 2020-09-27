@@ -2,6 +2,7 @@
 #define LIBSOCKS_RESPONSE_HPP
 
 #include "socks5/detail/type_traits/iterator.hpp"
+#include "socks5/message.hpp"
 
 #include <array>
 #include <cassert>
@@ -13,15 +14,11 @@
 
 namespace socks5 {
 
-struct response final {
+struct response final : socks5::message {
     using container_type = std::vector<std::uint8_t>;
-    using const_iterator = container_type::const_iterator;
-
-    response(std::vector<std::uint8_t> buf) : buf_ {std::move(buf)} {
-    }
 
     inline auto pop() -> std::uint8_t {
-        assert(available() > 0);
+        assert(size() > 0);
 
         auto ret = buf_.back();
         buf_.pop_back();
@@ -31,7 +28,7 @@ struct response final {
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
     inline auto take(T &out) -> bool {
-        if (available() < sizeof(T)) {
+        if (size() < sizeof(T)) {
             return false;
         }
 
@@ -46,7 +43,7 @@ struct response final {
               typename = std::enable_if_t<
                   socks5::detail::type_traits::is_iterator_v<Iterator>>>
     inline auto take(Iterator itr, std::size_t count) -> bool {
-        if (available() < count) {
+        if (size() < count) {
             return false;
         }
 
@@ -62,18 +59,6 @@ struct response final {
         return take_address(out);
     }
 
-    inline auto cbegin() const noexcept -> const_iterator {
-        return buf_.cbegin();
-    }
-
-    inline auto cend() const noexcept -> const_iterator {
-        return buf_.cend();
-    }
-
-    inline auto available() const noexcept -> std::size_t {
-        return buf_.size();
-    }
-
   private:
     template <typename Address>
     inline auto take_address(Address &out) -> bool {
@@ -86,8 +71,6 @@ struct response final {
         out = Address {bytes};
         return true;
     }
-
-    std::vector<std::uint8_t> buf_;
 };
 
 } // namespace socks5
