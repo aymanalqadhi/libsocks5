@@ -7,23 +7,18 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <deque>
 #include <type_traits>
-#include <vector>
 
 #include <boost/asio/ip/address.hpp>
 
 namespace socks5 {
 
-struct response final : socks5::message {
-    using container_type = std::vector<std::uint8_t>;
+struct response final : socks5::message<std::deque<std::uint8_t>> {
+    using container_type = std::deque<std::uint8_t>;
 
-    inline auto pop() -> std::uint8_t {
-        assert(size() > 0);
-
-        auto ret = buf_.back();
-        buf_.pop_back();
-
-        return ret;
+    response(container_type buf)
+        : socks5::message<container_type> {std::move(buf)} {
     }
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
@@ -33,7 +28,7 @@ struct response final : socks5::message {
         }
 
         for (std::size_t i {0}; i < sizeof(T); ++i) {
-            out = (out << 8) | pop();
+            out = (out << 8) | pop_front();
         }
 
         return true;
@@ -47,7 +42,9 @@ struct response final : socks5::message {
             return false;
         }
 
-        std::copy(buf_.end() - count, buf_.end(), itr);
+        std::copy(buf_.begin(), buf_.begin() + count, itr);
+        buf_.erase(buf_.begin(), buf_.begin() + count);
+
         return true;
     }
 
@@ -60,6 +57,15 @@ struct response final : socks5::message {
     }
 
   private:
+    inline auto pop_front() -> std::uint8_t {
+        assert(size() > 0);
+
+        auto ret = buf_.front();
+        buf_.pop_front();
+
+        return ret;
+    }
+
     template <typename Address>
     inline auto take_address(Address &out) -> bool {
         typename Address::bytes_type bytes;
