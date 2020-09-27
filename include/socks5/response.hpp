@@ -1,6 +1,8 @@
 #ifndef LIBSOCKS_RESPONSE_HPP
 #define LIBSOCKS_RESPONSE_HPP
 
+#include "socks5/detail/type_traits/iterator.hpp"
+
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -40,7 +42,9 @@ struct response final {
         return true;
     }
 
-    template <typename Iterator>
+    template <typename Iterator,
+              typename = std::enable_if_t<
+                  socks5::detail::type_traits::is_iterator_v<Iterator>>>
     inline auto take(Iterator itr, std::size_t count) -> bool {
         if (available() < count) {
             return false;
