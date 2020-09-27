@@ -25,7 +25,7 @@ TEST(ResponseTests, TakeUintTest) {
     EXPECT_TRUE(resp.take(b4));
     EXPECT_TRUE(resp.take(b8));
 
-    ASSERT_EQ(resp.size(), 0);
+    ASSERT_EQ(resp.available(), 0);
 
     EXPECT_EQ(b1, 0xAB);
     EXPECT_EQ(b2, 0xABCD);
@@ -38,17 +38,18 @@ TEST(ResponseTests, TakeRangeTest) {
     socks5::response resp {{orig.begin(), orig.end()}};
 
     ASSERT_EQ(resp.size(), orig.size());
+    ASSERT_EQ(resp.size(), resp.available());
 
     EXPECT_TRUE(resp.take(out.end(), 5));
     EXPECT_STREQ("Hello", out.c_str());
-    EXPECT_EQ(resp.size(), 8);
+    EXPECT_EQ(resp.available(), 8);
 
     out.clear();
 
     EXPECT_TRUE(resp.skip(2));
-    EXPECT_EQ(resp.size(), 6);
+    EXPECT_EQ(resp.available(), 6);
     EXPECT_TRUE(resp.take(out.end(), 5));
-    EXPECT_EQ(resp.size(), 1);
+    EXPECT_EQ(resp.available(), 1);
     EXPECT_STREQ("World", out.c_str());
 }
 
