@@ -18,12 +18,13 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
     using container_type = std::deque<std::uint8_t>;
 
     response(container_type buf)
-        : socks5::message<container_type> {std::move(buf)} {
+        : socks5::message<container_type> {std::move(buf)},
+          current_ {buf_.cbegin()} {
     }
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
     inline auto take(T &out) -> bool {
-        if (size() < sizeof(T)) {
+        if (available() < sizeof(T)) {
             return false;
         }
 
@@ -42,8 +43,8 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
             return false;
         }
 
-        std::copy(buf_.begin(), buf_.begin() + count, itr);
-        buf_.erase(buf_.begin(), buf_.begin() + count);
+        std::copy(current_, current_ + count, itr);
+        current_ += count;
 
         return true;
     }
@@ -57,22 +58,26 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
     }
 
     inline auto skip(std::size_t count) -> bool {
-        if (size() < count) {
+        if (available() < count) {
             return false;
         }
 
-        buf_.erase(buf_.begin(), buf_.begin() + count);
+        current_ += count;
         return true;
+    }
+
+    inline auto current() const noexcept -> container_type::const_iterator {
+        return current_;
+    }
+
+    inline auto available() const noexcept -> std::size_t {
+        return std::distance(current_, buf_.cend());
     }
 
   private:
     inline auto pop_front() -> std::uint8_t {
-        assert(size() > 0);
-
-        auto ret = buf_.front();
-        buf_.pop_front();
-
-        return ret;
+        assert(available() > 0);
+        return *(current_++);
     }
 
     template <typename Address>
@@ -86,6 +91,8 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
         out = Address {bytes};
         return true;
     }
+
+    container_type::const_iterator current_;
 };
 
 } // namespace socks5
