@@ -5,6 +5,10 @@
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <cstdint>
+#include <string_view>
 
 namespace socks5 {
 
@@ -20,6 +24,23 @@ struct basic_stream {
                                      CompletionToken &&             token) {
         return sock_.async_connect(std::move(ep),
                                    std::forward<CompletionToken>(token));
+    }
+
+    template <typename CompletionToken>
+    decltype(auto) async_socks5_open(std::string_view  addr,
+                                     std::uint16_t     port,
+                                     CompletionToken &&token) {
+        boost::system::error_code err;
+        auto                      ip = boost::asio::ip::make_address(addr, err);
+
+        if (err) {
+            GENERATE_ERROR_HANDLER(token, handler, result);
+            handler(err);
+            return result.get();
+        } else {
+            return async_socks5_open({std::move(ip), port},
+                                     std::forward<CompletionToken>(token));
+        }
     }
 
     inline void socks5_close() {
