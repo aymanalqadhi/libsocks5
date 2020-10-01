@@ -16,16 +16,23 @@ namespace socks5::tests::fakes {
 struct socket final {
     using executor_type = boost::asio::io_context::executor_type;
 
+    static constexpr auto dummy_address = "1.2.3.4";
+    static constexpr auto dummy_port    = 1234;
+
     inline auto get_executor() -> executor_type {
         return io_.get_executor();
     }
 
-    socket(boost::asio::io_context &io)
+    socket(boost::asio::io_context &io, bool connected = false)
         : io_ {io},
           input_pipe_ {io_},
           output_pipe_ {io_},
           connected_ {false},
           fails_ {false} {
+        if (connected) {
+            connected_.store(true);
+            ep_ = {boost::asio::ip::make_address(dummy_address), dummy_port};
+        }
     }
 
     template <typename CompletionToken>
