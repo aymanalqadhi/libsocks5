@@ -12,15 +12,14 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
 endif()
 
 # Project files
-set(SOURCE_FILES src/dummy.cpp)
 include_directories(include/)
 
 # Third-party libraries
 add_subdirectory(lib/googletest)
 
 # Targets
-add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
-target_include_directories(${PROJECT_NAME} PUBLIC include/)
+add_library(${PROJECT_NAME} INTERFACE)
+target_include_directories(${PROJECT_NAME} INTERFACE include/)
 
 # Testing
 enable_testing()
