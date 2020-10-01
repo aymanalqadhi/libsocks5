@@ -9,7 +9,6 @@
 #include <boost/system/system_error.hpp>
 
 #include <cassert>
-#include <stdexcept>
 
 namespace socks5::tests::fakes {
 
