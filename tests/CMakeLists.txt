@@ -16,5 +16,6 @@ endfunction()
 include_directories(include/)
 
 # Add tests
+create_test(basic_stream)
 create_test(request)
 create_test(response)
