@@ -8,7 +8,8 @@ namespace socks5 {
 
 template <typename Container>
 struct message {
-    using iterator_type = typename Container::iterator;
+    using container_type = Container;
+    using iterator_type  = typename container_type::iterator;
 
     message() = default;
 
@@ -30,6 +31,11 @@ struct message {
     inline auto operator[](std::size_t i) ->
         typename iterator_type::value_type {
         return buf_[i];
+    }
+
+    [[nodiscard]] inline auto buffer() const noexcept
+        -> const container_type & {
+        return std::move(buf_);
     }
 
   protected:
