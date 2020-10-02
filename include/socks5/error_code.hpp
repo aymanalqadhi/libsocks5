@@ -17,7 +17,8 @@ enum class [[nodiscard]] error_code : std::uint8_t {
     ttl_expired                = 0x06,
     command_not_supported      = 0x07,
     address_type_not_supported = 0x08,
-    auth_method_not_supported  = 0x09,
+    auth_method_not_supported  = 0x10,
+    authentication_failed      = 0x11,
     unknown_error              = 0xFF};
 
 namespace detail {
@@ -50,6 +51,8 @@ class error_category : public boost::system::error_category {
             return "Address type not supported";
         case socks5::error_code::auth_method_not_supported:
             return "Authentication method not supported";
+        case socks5::error_code::authentication_failed:
+            return "Authentication failed";
         default:
             return "Unknoww error";
         }
