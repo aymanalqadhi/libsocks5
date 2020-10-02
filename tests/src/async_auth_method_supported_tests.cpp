@@ -44,11 +44,8 @@ TEST_F(AsyncAuthMethodSupportedTest, NormalValuesTest) {
     respbuf[1] = chosen;
     boost::asio::write(socket.input_pipe(), boost::asio::buffer(respbuf));
     socks5::detail::async::async_auth_method_supported(
-        socket,
-        [](const auto &err, auto selected) {
-            EXPECT_FALSE(err);
-        },
-        r1, r2, r3, r4, chosen);
+        socket, [](const auto &err, auto selected) { EXPECT_FALSE(err); }, r1,
+        r2, r3, r4, chosen);
     io.run();
 }
 

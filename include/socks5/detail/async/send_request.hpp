@@ -23,9 +23,7 @@ struct async_send_request_op final {
 
     template <typename... Arg>
     inline void initiate(Arg &&... args) {
-        req_.put<std::uint8_t>(0x05);
         (req_.put(std::forward<Arg>(args)), ...);
-
         boost::asio::async_write(sock_, boost::asio::buffer(req_.buffer()),
                                  std::move(*this));
     }

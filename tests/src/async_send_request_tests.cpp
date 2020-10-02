@@ -25,8 +25,8 @@ TEST_F(AsyncSendRequestTest, NumericalRequestTest) {
     std::array<std::uint8_t, 29> buf {};
 
     socks5::detail::async::async_send_request(
-        socket, [](const auto &err) { EXPECT_FALSE(err); }, b1, b2, b4, b8,
-        str);
+        socket, [](const auto &err) { EXPECT_FALSE(err); },
+        static_cast<std::uint8_t>(0x05), b1, b2, b4, b8, str);
     io.run();
 
     EXPECT_NO_THROW(

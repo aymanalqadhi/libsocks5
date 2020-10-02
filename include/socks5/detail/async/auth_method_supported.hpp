@@ -55,6 +55,7 @@ struct async_auth_method_supported_op final {
                     boost::asio::buffer(self.buf_.get(), buffer_size),
                     std::move(self));
             },
+            static_cast<std::uint8_t>(0x05),
             static_cast<std::uint8_t>(sizeof...(Method)),
             static_cast<std::uint8_t>(methods)...);
     }
