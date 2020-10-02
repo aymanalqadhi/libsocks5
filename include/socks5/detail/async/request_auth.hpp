@@ -1,5 +1,5 @@
-#ifndef LIBSOCKS5_DETAIL_ASYNC_AUTH_METHOD_SUPPORTED_HPP
-#define LIBSOCKS5_DETAIL_ASYNC_AUTH_METHOD_SUPPORTED_HPP
+#ifndef LIBSOCKS5_DETAIL_ASYNC_REQUEST_AUTH_HPP
+#define LIBSOCKS5_DETAIL_ASYNC_REQUEST_AUTH_HPP
 
 #include "socks5/detail/async/send_request.hpp"
 #include "socks5/detail/async/util.hpp"
@@ -16,10 +16,10 @@
 namespace socks5::detail::async {
 
 template <typename AsyncReadStream, typename Handler>
-struct async_auth_method_supported_op final {
+struct async_request_auth_op final {
     static constexpr auto buffer_size = 2;
 
-    async_auth_method_supported_op(AsyncReadStream &sock, Handler &&handler)
+    async_request_auth_op(AsyncReadStream &sock, Handler &&handler)
         : sock_ {sock},
           handler_ {std::forward<Handler>(handler)},
           buf_ {std::make_unique<std::uint8_t>(buffer_size)} {
@@ -67,9 +67,9 @@ struct async_auth_method_supported_op final {
 };
 
 template <typename AsyncStream, typename CompletionToken, typename... Method>
-inline decltype(auto) async_auth_method_supported(AsyncStream &     sock,
-                                                  CompletionToken &&token,
-                                                  Method... methods) {
+inline decltype(auto) async_request_auth(AsyncStream &     sock,
+                                         CompletionToken &&token,
+                                         Method... methods) {
     GENERATE_COMPLETION_HANDLER(
         void(const boost::system::error_code &, std::uint8_t), token, handler,
         result);
@@ -77,8 +77,7 @@ inline decltype(auto) async_auth_method_supported(AsyncStream &     sock,
     static_assert((std::is_unsigned_v<Method>, ...),
                   "Numerical values are required");
 
-    async_auth_method_supported_op<AsyncStream, handler_type> {
-        sock, std::move(handler)}
+    async_request_auth_op<AsyncStream, handler_type> {sock, std::move(handler)}
         .initiate(std::forward<Method>(methods)...);
 
     return result.get();

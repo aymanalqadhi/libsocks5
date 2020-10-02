@@ -1,4 +1,4 @@
-#include "socks5/detail/async/auth_method_supported.hpp"
+#include "socks5/detail/async/request_auth.hpp"
 #include "socks5/error_code.hpp"
 #include "socks5/tests/fixtures/socket.hpp"
 #include "socks5/tests/util/random.hpp"
@@ -17,10 +17,10 @@
 #include <version>
 namespace socks5::tests {
 
-struct AsyncAuthMethodSupportedTest
+struct AsyncRequestAuthTest
     : socks5::tests::fixtures::SocketTest<true> {};
 
-TEST_F(AsyncAuthMethodSupportedTest, NormalValuesTest) {
+TEST_F(AsyncRequestAuthTest, NormalValuesTest) {
     std::array<std::uint8_t, 2> respbuf {0x05, 0xFF};
 
     auto rnd = []() -> std::uint8_t {
@@ -30,7 +30,7 @@ TEST_F(AsyncAuthMethodSupportedTest, NormalValuesTest) {
     auto r1 = rnd(), r2 = rnd(), r3 = rnd(), r4 = rnd(), chosen = rnd();
 
     boost::asio::write(socket.input_pipe(), boost::asio::buffer(respbuf));
-    socks5::detail::async::async_auth_method_supported(
+    socks5::detail::async::async_request_auth(
         socket,
         [](const auto &err, auto selected) {
             EXPECT_TRUE(err);
@@ -43,7 +43,7 @@ TEST_F(AsyncAuthMethodSupportedTest, NormalValuesTest) {
 
     respbuf[1] = chosen;
     boost::asio::write(socket.input_pipe(), boost::asio::buffer(respbuf));
-    socks5::detail::async::async_auth_method_supported(
+    socks5::detail::async::async_request_auth(
         socket, [](const auto &err, auto selected) { EXPECT_FALSE(err); }, r1,
         r2, r3, r4, chosen);
     io.run();
