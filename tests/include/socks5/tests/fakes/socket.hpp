@@ -2,6 +2,7 @@
 #define LIBSOCKS5_TESTS_FAKES_SOCKET_HPP
 
 #include "socks5/detail/async/util.hpp"
+#include "socks5/tests/util/random.hpp"
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -15,9 +16,6 @@ namespace socks5::tests::fakes {
 struct socket final {
     using executor_type = boost::asio::io_context::executor_type;
 
-    static constexpr auto dummy_address = "1.2.3.4";
-    static constexpr auto dummy_port    = 1234;
-
     inline auto get_executor() -> executor_type {
         return io_.get_executor();
     }
@@ -28,9 +26,10 @@ struct socket final {
           output_pipe_ {io_},
           connected_ {false},
           fails_ {false} {
+
         if (connected) {
-            connected_.store(true);
-            ep_ = {boost::asio::ip::make_address(dummy_address), dummy_port};
+            connected_ = true;
+            ep_        = socks5::tests::util::random_endpoint();
         }
     }
 
@@ -38,79 +37,104 @@ struct socket final {
     inline decltype(auto)
     async_connect(const boost::asio::ip::tcp::endpoint &ep,
                   CompletionToken &&                    token) {
-        GENERATE_COMPLETION_HANDLER(void(const boost::system::error_code &),
-                                    token, handler, result);
+        GENERATE_ERROR_HANDLER(token, handler, result);
 
-        assert(!connected_.load());
+        assert(!connected_);
 
-        if (fails_.load()) {
-            return handler(
-                boost::asio::error::make_error_code(boost::asio::error::fault));
+        if (fails_) {
+            handler(boost::asio::error::fault);
+        } else {
+            connected_ = true;
+            ep_        = ep;
+            handler(boost::system::error_code {});
         }
 
-        connected_.store(true);
-        ep_ = ep;
-
-        handler(boost::system::error_code {});
-
         return result.get();
+    }
+
+    inline void connect(const boost::asio::ip::tcp::endpoint &ep,
+                        boost::system::error_code &           ec) {
+        if (fails_) {
+            ec = boost::asio::error::fault;
+            return;
+        }
+
+        connected_ = true;
+        ep_        = ep;
+        ec         = {};
     }
 
     inline void close() {
         assert(connected_);
 
-        if (fails_.load()) {
+        if (fails_) {
             throw std::logic_error {"Cannot close socket"};
         }
 
         input_pipe_.close();
         output_pipe_.close();
 
-        connected_.store(false);
+        connected_ = false;
     }
 
     template <typename CompletionToken>
-    inline void async_read_some(boost::asio::mutable_buffer buf,
-                                CompletionToken &&          token) {
-        GENERATE_COMPLETION_HANDLER(
-            void(const boost::system::error_code &, std::size_t), token,
-            handler, result);
+    inline void async_read_some(const boost::asio::mutable_buffer &buf,
+                                CompletionToken &&                 token) {
+        GENERATE_TRANSMISSION_ERROR_HANDLER(token, handler, result);
 
         assert(connected_);
 
         if (fails_) {
             handler(boost::asio::error::fault, 0);
-            return;
+        } else {
+            input_pipe_.async_read_some(buf, std::move(handler));
         }
 
-        input_pipe_.async_read_some(buf, std::move(handler));
         return result.get();
     }
 
+    inline auto read_some(const boost::asio::mutable_buffer &buf,
+                          boost::system::error_code &ec) -> std::size_t {
+        if (fails_) {
+            ec = boost::asio::error::fault;
+            return 0;
+        }
+
+        return input_pipe_.read_some(buf, ec);
+    }
+
     template <typename CompletionToken>
-    inline void async_write_some(boost::asio::const_buffer buf,
-                                 CompletionToken &&        token) {
-        GENERATE_COMPLETION_HANDLER(
-            void(const boost::system::error_code &, std::size_t), token,
-            handler, result);
+    inline void async_write_some(const boost::asio::const_buffer &buf,
+                                 CompletionToken &&               token) {
+        GENERATE_TRANSMISSION_ERROR_HANDLER(token, handler, result);
 
         assert(connected_);
 
         if (fails_) {
             handler(boost::asio::error::fault, 0);
-            return;
+        } else {
+            output_pipe_.async_write_some(buf, std::move(handler));
         }
 
-        output_pipe_.async_write_some(buf, std::move(handler));
         return result.get();
+    }
+
+    inline auto write_some(const boost::asio::const_buffer &buf,
+                           boost::system::error_code &      ec) -> std::size_t {
+        if (fails_) {
+            ec = boost::asio::error::fault;
+            return 0;
+        }
+
+        return output_pipe_.write_some(buf, ec);
     }
 
     [[nodiscard]] inline auto always_fails() const noexcept -> bool {
-        return fails_.load();
+        return fails_;
     }
 
     inline void always_fails(bool value) noexcept {
-        fails_.store(value);
+        fails_ = value;
     }
 
     [[nodiscard]] inline auto is_open() const noexcept -> bool {
@@ -130,6 +154,14 @@ struct socket final {
     [[nodiscard]] inline auto remote_endpoint() noexcept
         -> boost::asio::ip::tcp::endpoint & {
         return ep_;
+    }
+
+    inline void clear_input_pipe() {
+        input_pipe_ = {io_};
+    }
+
+    inline void clear_output_pipe() {
+        output_pipe_ = {io_};
     }
 
   private:
