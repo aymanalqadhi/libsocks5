@@ -31,8 +31,16 @@ inline void append_uint(T num, std::vector<std::uint8_t> &buf) noexcept {
 
 } // namespace detail
 
+template <std::uint8_t version>
 struct request final : socks5::message<std::vector<std::uint8_t>> {
-    request() = default;
+    request() {
+        put<std::uint8_t>(version);
+    }
+
+    template <typename... Arg>
+    request(Arg &&... args) : request() {
+        (put(std::forward<Arg>(args)), ...);
+    }
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
     inline void put(T num) noexcept {
@@ -55,14 +63,31 @@ struct request final : socks5::message<std::vector<std::uint8_t>> {
 
     inline void put(const boost::asio::ip::address_v4 &addr) {
         const auto &bytes = addr.to_bytes();
+        put<std::uint8_t>(1);
         put(bytes.cbegin(), bytes.cend());
     }
 
     inline void put(const boost::asio::ip::address_v6 &addr) {
         const auto &bytes = addr.to_bytes();
+        put<std::uint8_t>(4);
         put(bytes.cbegin(), bytes.cend());
     }
+
+    inline void put(const boost::asio::ip::address &addr) {
+        if (addr.is_v4()) {
+            put(addr.to_v4());
+        } else {
+            put(addr.to_v6());
+        }
+    }
 };
+
+template <std::uint8_t version, typename... T>
+inline auto make_request(T &&... args) -> socks5::request<version> {
+    socks5::request<version> ret {};
+    (ret.put(std::forward<T>(args)), ...);
+    return ret;
+}
 
 } // namespace socks5
 
