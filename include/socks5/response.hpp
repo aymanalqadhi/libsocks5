@@ -6,20 +6,21 @@
 
 #include <boost/asio/ip/address.hpp>
 
-#include <array>
 #include <cassert>
 #include <cstdint>
-#include <deque>
+#include <stdio.h>
 #include <type_traits>
+#include <vector>
 
 namespace socks5 {
 
-struct response final : socks5::message<std::deque<std::uint8_t>> {
-    using container_type = std::deque<std::uint8_t>;
+template <typename Container = std::vector<std::uint8_t>>
+struct response final : socks5::message<Container> {
+    response(Container buf)
+        : socks5::message<Container> {std::move(buf)}, pos_ {0} {
+    }
 
-    response(container_type buf)
-        : socks5::message<container_type> {std::move(buf)},
-          current_ {buf_.cbegin()} {
+    response() : response(Container {}) {
     }
 
     template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
@@ -39,12 +40,12 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
               typename = std::enable_if_t<
                   socks5::detail::type_traits::is_iterator_v<Iterator>>>
     inline auto take(Iterator itr, std::size_t count) -> bool {
-        if (size() < count) {
+        if (available() < count) {
             return false;
         }
 
-        std::copy(current_, current_ + count, itr);
-        current_ += count;
+        std::copy_n(current(), count, itr);
+        advance(count);
 
         return true;
     }
@@ -57,27 +58,59 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
         return take_address(out);
     }
 
+    inline auto take(std::string &out) -> bool {
+        if (available() < 1) {
+            return false;
+        }
+
+        auto len = pop_front();
+
+        if (available() < len) {
+            return false;
+        }
+
+        out.resize(len);
+        std::copy_n(current(), len, out.begin());
+        advance(len);
+
+        return true;
+    }
+
+    template <typename T>
+    inline auto take() -> T {
+        T ret {};
+        take(ret);
+        return ret;
+    }
+
     inline auto skip(std::size_t count) -> bool {
         if (available() < count) {
             return false;
         }
 
-        current_ += count;
+        pos_ += count;
         return true;
     }
 
-    inline auto current() const noexcept -> container_type::const_iterator {
-        return current_;
+    inline auto current() const noexcept -> typename Container::const_iterator {
+        return message<Container>::buffer().cbegin() + pos_;
     }
 
     inline auto available() const noexcept -> std::size_t {
-        return std::distance(current_, buf_.cend());
+        return std::distance(message<Container>::buffer().cbegin() + pos_,
+                             message<Container>::buffer().cend());
     }
 
   private:
+    inline void advance(std::size_t n) noexcept {
+        assert(n <= available());
+        pos_ += n;
+    }
+
     inline auto pop_front() -> std::uint8_t {
-        assert(available() > 0);
-        return *(current_++);
+        std::uint8_t ret {*current()};
+        advance(1);
+        return ret;
     }
 
     template <typename Address>
@@ -92,8 +125,11 @@ struct response final : socks5::message<std::deque<std::uint8_t>> {
         return true;
     }
 
-    container_type::const_iterator current_;
+    std::size_t pos_;
 };
+
+template <std::size_t size>
+using response_fixed = response<std::array<std::uint8_t, size>>;
 
 } // namespace socks5
 
