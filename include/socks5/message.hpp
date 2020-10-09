@@ -28,14 +28,13 @@ struct message {
         return buf_.size();
     }
 
-    inline auto operator[](std::size_t i) ->
-        typename iterator_type::value_type {
-        return buf_[i];
-    }
-
     [[nodiscard]] inline auto buffer() const noexcept
         -> const container_type & {
-        return std::move(buf_);
+        return buf_;
+    }
+
+    [[nodiscard]] inline auto buffer() noexcept -> container_type & {
+        return buf_;
     }
 
   protected:
