@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # Project Name
 project(socks5 CXX)
+set(MAIN_PROJECT_NAME ${PROJECT_NAME})
 
 # Project Options
 set(CMAKE_CXX_STANDARD 17)
