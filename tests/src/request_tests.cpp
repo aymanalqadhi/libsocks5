@@ -6,12 +6,13 @@
 #include <string>
 #include <vector>
 
+#include <gtest/gtest.h>
 #include <boost/asio/ip/address.hpp>
 
 namespace socks5::tests {
 
 struct RequestTests : ::testing::Test {
-    socks5::request req {};
+    socks5::request<5> req {};
 };
 
 TEST_F(RequestTests, PutUintTest) {
@@ -49,7 +50,7 @@ TEST_F(RequestTests, PutStringTest) {
 
     req.put(str);
     ASSERT_EQ(str.size() + 1, req.size());
-    EXPECT_EQ(str.size(), req[0]);
+    EXPECT_EQ(str.size(), req.buffer()[0]);
     EXPECT_TRUE(std::equal(req.begin() + 1, req.end(), str.begin(), str.end()));
 }
 
