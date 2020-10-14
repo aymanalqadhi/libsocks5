@@ -1,7 +1,6 @@
 #ifndef LIBSOCKS5_TESTS_FAKES_SOCKET_HPP
 #define LIBSOCKS5_TESTS_FAKES_SOCKET_HPP
 
-#include "socks5/detail/async/util.hpp"
 #include "socks5/tests/util/random.hpp"
 
 #include <boost/asio/buffer.hpp>
@@ -33,25 +32,6 @@ struct socket final {
         }
     }
 
-    template <typename CompletionToken>
-    inline decltype(auto)
-    async_connect(const boost::asio::ip::tcp::endpoint &ep,
-                  CompletionToken &&                    token) {
-        GENERATE_ERROR_HANDLER(token, handler, result);
-
-        assert(!connected_);
-
-        if (fails_) {
-            handler(boost::asio::error::fault);
-        } else {
-            connected_ = true;
-            ep_        = ep;
-            handler(boost::system::error_code {});
-        }
-
-        return result.get();
-    }
-
     inline void connect(const boost::asio::ip::tcp::endpoint &ep,
                         boost::system::error_code &           ec) {
         if (fails_) {
@@ -77,22 +57,6 @@ struct socket final {
         connected_ = false;
     }
 
-    template <typename CompletionToken>
-    inline void async_read_some(const boost::asio::mutable_buffer &buf,
-                                CompletionToken &&                 token) {
-        GENERATE_TRANSMISSION_ERROR_HANDLER(token, handler, result);
-
-        assert(connected_);
-
-        if (fails_) {
-            handler(boost::asio::error::fault, 0);
-        } else {
-            input_pipe_.async_read_some(buf, std::move(handler));
-        }
-
-        return result.get();
-    }
-
     inline auto read_some(const boost::asio::mutable_buffer &buf,
                           boost::system::error_code &ec) -> std::size_t {
         if (fails_) {
@@ -101,22 +65,6 @@ struct socket final {
         }
 
         return input_pipe_.read_some(buf, ec);
-    }
-
-    template <typename CompletionToken>
-    inline void async_write_some(const boost::asio::const_buffer &buf,
-                                 CompletionToken &&               token) {
-        GENERATE_TRANSMISSION_ERROR_HANDLER(token, handler, result);
-
-        assert(connected_);
-
-        if (fails_) {
-            handler(boost::asio::error::fault, 0);
-        } else {
-            output_pipe_.async_write_some(buf, std::move(handler));
-        }
-
-        return result.get();
     }
 
     inline auto write_some(const boost::asio::const_buffer &buf,
