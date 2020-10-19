@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cassert>
+#include <string_view>
 
 namespace socks5 {
 
@@ -21,16 +22,15 @@ struct basic_tcp_socket final : socks5::basic_socket<Stream> {
 
     inline void connect(const boost::asio::ip::tcp::endpoint &ep,
                         boost::system::error_code &           ec) noexcept {
-        if (!basic_socket<Stream>::is_socks5_ready(ec)) {
-            return;
+        if (do_connect(ec, ep); !ec) {
+            remote_ = ep;
         }
+    }
 
-        if (socks5::detail::sync::tcp_connect(basic_socket<Stream>::stream(),
-                                              ep, local_, ec);
-            !ec) {
-            is_open_ = true;
-            remote_  = ep;
-        }
+    inline void connect(std::string_view           domain,
+                        std::uint16_t              port,
+                        boost::system::error_code &ec) noexcept {
+        do_connect(ec, domain, port);
     }
 
     inline void close() {
@@ -77,6 +77,21 @@ struct basic_tcp_socket final : socks5::basic_socket<Stream> {
     }
 
   private:
+    template <typename... EndpontParam>
+    inline void do_connect(boost::system::error_code &ec,
+                           EndpontParam &&... ep) noexcept {
+        if (!basic_socket<Stream>::is_socks5_ready(ec)) {
+            return;
+        }
+
+        if (socks5::detail::sync::tcp_connect(basic_socket<Stream>::stream(),
+                                              std::forward<EndpontParam>(ep)...,
+                                              local_, ec);
+            !ec) {
+            is_open_ = true;
+        }
+    }
+
     bool                           is_open_;
     boost::asio::ip::tcp::endpoint local_, remote_;
 };
