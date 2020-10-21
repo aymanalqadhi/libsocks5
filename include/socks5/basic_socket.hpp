@@ -3,6 +3,7 @@
 
 #include "socks5/detail/sync/auth.hpp"
 #include "socks5/detail/sync/open.hpp"
+#include "socks5/detail/throw_error.hpp"
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/system/system_error.hpp>
@@ -21,8 +22,14 @@ struct basic_socket {
     }
 
     inline void socks5_open(const boost::asio::ip::tcp::endpoint &ep,
-                            boost::system::error_code &           ec) {
+                            boost::system::error_code &           ec) noexcept {
         socks5::detail::sync::open(stream_, ep, ec);
+    }
+
+    inline void socks5_open(const boost::asio::ip::tcp::endpoint &ep) {
+        boost::system::error_code ec;
+        socks5_open(ep, ec);
+        socks5::detail::throw_error(ec);
     }
 
     inline void socks5_auth(boost::system::error_code &ec) noexcept {
@@ -35,9 +42,15 @@ struct basic_socket {
         }
     }
 
+    inline void socks5_auth() {
+        boost::system::error_code ec;
+        socks5_auth(ec);
+        socks5::detail::throw_error(ec);
+    }
+
     inline void socks5_auth(std::string_view           uname,
                             std::string_view           passwd,
-                            boost::system::error_code &ec) {
+                            boost::system::error_code &ec) noexcept {
         if (is_socks5_authed()) {
             return;
         }
@@ -49,7 +62,19 @@ struct basic_socket {
         }
     }
 
-    inline void socks5_close() {
+    inline void socks5_auth(std::string_view uname, std::string_view passwd) {
+        boost::system::error_code ec;
+        socks5_auth(ec, std::move(uname), std::move(passwd));
+        socks5::detail::throw_error(ec);
+    }
+
+    inline void socks5_close(boost::system::error_code &ec) noexcept {
+        if (stream_.close(ec); !ec) {
+            is_authed_ = false;
+        }
+    }
+
+    inline void socks5_close() noexcept {
         stream_.close();
         is_authed_ = false;
     }

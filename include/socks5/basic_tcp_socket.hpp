@@ -3,6 +3,7 @@
 
 #include "socks5/basic_socket.hpp"
 #include "socks5/detail/sync/command.hpp"
+#include "socks5/detail/throw_error.hpp"
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -27,10 +28,28 @@ struct basic_tcp_socket final : socks5::basic_socket<Stream> {
         }
     }
 
+    inline void connect(const boost::asio::ip::tcp::endpoint &ep) {
+        boost::system::error_code ec;
+        connect(ep, ec);
+        socks5::detail::throw_error(ec);
+    }
+
     inline void connect(std::string_view           domain,
                         std::uint16_t              port,
                         boost::system::error_code &ec) noexcept {
         do_connect(ec, domain, port);
+    }
+
+    inline void connect(std::string_view domain, std::uint16_t port) {
+        boost::system::error_code ec;
+        connect(std::move(domain), port, ec);
+        socks5::detail::throw_error(ec);
+    }
+
+    inline void close(boost::system::error_code &ec) noexcept {
+        if (basic_socket<Stream>::socks5_close(ec); !ec) {
+            is_open_ = false;
+        }
     }
 
     inline void close() {
@@ -50,6 +69,14 @@ struct basic_tcp_socket final : socks5::basic_socket<Stream> {
         return basic_socket<Stream>::stream().write_some(buf, ec);
     }
 
+    template <typename ConstBuffer>
+    inline auto write_some(const ConstBuffer &buf) -> std::size_t {
+        boost::system::error_code ec;
+        auto                      tx = write_some(buf, ec);
+        socks5::detail::throw_error(ec);
+        return tx;
+    }
+
     template <typename MutableBuffer>
     inline auto read_some(const MutableBuffer &      buf,
                           boost::system::error_code &ec) noexcept
@@ -60,6 +87,14 @@ struct basic_tcp_socket final : socks5::basic_socket<Stream> {
         }
 
         return basic_socket<Stream>::stream().read_some(buf, ec);
+    }
+
+    template <typename MutableBuffer>
+    inline auto read_some(const MutableBuffer &buf) -> std::size_t {
+        boost::system::error_code ec;
+        auto                      tx = read_some(buf, ec);
+        socks5::detail::throw_error(ec);
+        return tx;
     }
 
     inline auto is_open() const noexcept -> bool {
