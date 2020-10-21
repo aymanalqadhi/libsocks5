@@ -22,6 +22,9 @@ add_subdirectory(lib/googletest)
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE include/)
 
+# Examples
+add_subdirectory(examples)
+
 # Testing
 enable_testing()
 add_subdirectory(tests)
